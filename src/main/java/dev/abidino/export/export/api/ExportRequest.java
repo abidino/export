@@ -1,4 +1,6 @@
 package dev.abidino.export.export.api;
 
-public record ExportRequest(String query, ExportType exportType) {
+import java.util.List;
+
+public record ExportRequest(String query, ExportType exportType, List<Filter> filters) {
 }

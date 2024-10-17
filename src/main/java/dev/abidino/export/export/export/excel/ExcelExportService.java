@@ -2,6 +2,7 @@ package dev.abidino.export.export.export.excel;
 
 import dev.abidino.export.FileUtil;
 import dev.abidino.export.export.api.ExportType;
+import dev.abidino.export.export.api.Filter;
 import dev.abidino.export.export.entities.Request;
 import dev.abidino.export.export.entities.TableHeader;
 import dev.abidino.export.export.service.ColumnHeaderService;
@@ -26,7 +27,7 @@ public class ExcelExportService {
     private final ColumnHeaderService columnHeaderService;
     private final QueryExecuteService queryExecuteService;
 
-    public String createExcel(String query, ExportType exportType, Long dataCount, Long currentOffset, Request request) {
+    public String createExcel(String query, ExportType exportType, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
         TableHeader tableHeader = request.getTableHeader();
         List<String> headerList = columnHeaderService.getHeaderListByTableHeaderId(tableHeader.getId());
 
@@ -34,7 +35,7 @@ public class ExcelExportService {
         Sheet sheet = workbook.createSheet(tableHeader.getHeader());
         while (currentOffset < dataCount) {
             String paginatedQuery = query + " LIMIT " + BATCH_SIZE + " OFFSET " + currentOffset;
-            List<List<Object>> lists = queryExecuteService.executeQuery(paginatedQuery);
+            List<List<Object>> lists = queryExecuteService.executeQuery(paginatedQuery, filters);
             addValues(lists, headerList, sheet);
             currentOffset += BATCH_SIZE;
         }

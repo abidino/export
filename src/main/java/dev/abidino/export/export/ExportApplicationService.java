@@ -1,6 +1,7 @@
 package dev.abidino.export.export;
 
 import dev.abidino.export.export.api.ExportType;
+import dev.abidino.export.export.api.Filter;
 import dev.abidino.export.export.entities.Request;
 import dev.abidino.export.export.entities.TableHeader;
 import dev.abidino.export.export.export.csv.AsyncExportService;
@@ -14,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,25 +29,30 @@ public class ExportApplicationService {
     private final TableHeaderService tableHeaderService;
 
 
-    public String export(String query, ExportType exportType) {
+    public String export(String query, ExportType exportType, List<Filter> filters) {
 
-        Long dataCount = queryExecuteService.executeCountQuery(query);
+        Long dataCount = queryExecuteService.executeCountQuery(query, filters);
+
         log.info("count is {}", dataCount);
+        if (dataCount == 0) {
+            return "data not found";
+        }
 
         TableHeader tableHeader = tableHeaderService.getTableHeaderByExportType(exportType);
         Request request = createRequest(query, dataCount, tableHeader);
         Request savedRequest = requestService.save(request);
 
         if (dataCount < 5) {
-            String excel = excelExportService.createExcel(query, exportType, dataCount, 0L, savedRequest);
+            String excel = excelExportService.createExcel(query, exportType, dataCount, 0L, savedRequest, filters);
             requestService.updateStatus(savedRequest.getId(), "DONE");
             return excel;
         } else if (dataCount < 7) {
-            String csv = csvExportService.createCsv(query, exportType, dataCount, 0L, savedRequest);
+            String csv = csvExportService.createCsv(query, exportType, dataCount, 0L, savedRequest, filters);
             requestService.updateStatus(savedRequest.getId(), "DONE");
             return csv;
+        } else {
+            return asyncExportService.startAsyncExport(query, exportType, request.getId(), filters);
         }
-        return asyncExportService.startAsyncExport(query, exportType, request.getId());
     }
 
     public void exportWithAsync(ExportEvent exportEvent) {
@@ -57,7 +65,7 @@ public class ExportApplicationService {
         request.setTableHeader(tableHeader);
         request.setDataCount(dataCount.intValue());
         request.setFilters(query);
-        request.setRequestStatus("INPROGRESS");
+        request.setRequestStatus("IN_PROGRESS");
         return requestService.save(request);
     }
 
