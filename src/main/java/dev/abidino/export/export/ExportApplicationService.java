@@ -1,17 +1,15 @@
 package dev.abidino.export.export;
 
 import dev.abidino.export.export.api.ExportRequest;
+import dev.abidino.export.export.api.ExportResponse;
 import dev.abidino.export.export.api.Filter;
-import dev.abidino.export.export.api.TableHeaderSubType;
-import dev.abidino.export.export.api.TableHeaderType;
+import dev.abidino.export.export.api.RequestStatus;
 import dev.abidino.export.export.entities.Request;
-import dev.abidino.export.export.entities.TableHeader;
 import dev.abidino.export.export.export.csv.AsyncExportService;
 import dev.abidino.export.export.export.csv.CsvExportService;
 import dev.abidino.export.export.export.excel.ExcelExportService;
 import dev.abidino.export.export.service.QueryExecuteService;
 import dev.abidino.export.export.service.RequestService;
-import dev.abidino.export.export.service.TableHeaderService;
 import dev.abidino.export.kafka.ExportEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,51 +26,38 @@ public class ExportApplicationService {
     private final CsvExportService csvExportService;
     private final AsyncExportService asyncExportService;
     private final RequestService requestService;
-    private final TableHeaderService tableHeaderService;
 
-
-    public String export(ExportRequest exportRequest) {
-        List<Filter> filters = exportRequest.filters();
-        String query = exportRequest.query();
-        TableHeaderSubType tableHeaderSubType = exportRequest.tableHeaderSubType();
-        TableHeaderType tableHeaderType = exportRequest.tableHeaderType();
-
+    public ExportResponse export(ExportRequest exportRequest) {
+        List<Filter> filters = exportRequest.query().filters();
+        String query = exportRequest.query().query();
         Long dataCount = queryExecuteService.executeCountQuery(query, filters);
 
-        log.info("count is {}", dataCount);
         if (dataCount == 0) {
-            return "data not found";
+            return new ExportResponse(null, null, false, "data not found", null);
         }
 
-        TableHeader tableHeader = tableHeaderService.getTableHeaderByExportType(tableHeaderType, tableHeaderSubType);
-        Request request = createRequest(query, dataCount, tableHeader);
-        Request savedRequest = requestService.save(request);
+        Request request = requestService.save(exportRequest, dataCount);
 
-        if (dataCount < 5) {
-            String excel = excelExportService.createExcel(query, tableHeaderSubType, dataCount, 0L, savedRequest, filters);
-            requestService.updateStatus(savedRequest.getId(), "DONE");
-            return excel;
+        if (dataCount < 9) {
+            ExportResponse exportResponse = excelExportService.createExcel(query, dataCount, 0L, request, filters);
+            updateRequest(request, exportResponse);
+            return exportResponse;
         } else if (dataCount < 7) {
-            String csv = csvExportService.createCsv(query, tableHeaderSubType, dataCount, 0L, savedRequest, filters);
-            requestService.updateStatus(savedRequest.getId(), "DONE");
-            return csv;
+            ExportResponse exportResponse = csvExportService.createCsv(query, dataCount, 0L, request, filters);
+            updateRequest(request, exportResponse);
+            return exportResponse;
         } else {
-            return asyncExportService.startAsyncExport(query, tableHeaderSubType, request.getId(), filters);
+            return asyncExportService.startAsyncExport(query, request.getId(), filters);
         }
+    }
+
+    private void updateRequest(Request request, ExportResponse exportResponse) {
+        request.addMediaId(exportResponse.mediaId());
+        request.setRequestStatus(RequestStatus.DONE);
+        requestService.save(request);
     }
 
     public void exportWithAsync(ExportEvent exportEvent) {
-        asyncExportService.exportWithKafka(exportEvent);
+        asyncExportService.createCsv(exportEvent);
     }
-
-
-    private Request createRequest(String query, Long dataCount, TableHeader tableHeader) {
-        Request request = new Request();
-        request.setTableHeader(tableHeader);
-        request.setDataCount(dataCount.intValue());
-        request.setFilters(query);
-        request.setRequestStatus("IN_PROGRESS");
-        return requestService.save(request);
-    }
-
 }

@@ -1,11 +1,10 @@
 package dev.abidino.export.export.export.csv;
 
 import dev.abidino.export.FileUtil;
+import dev.abidino.export.export.api.ExportResponse;
 import dev.abidino.export.export.api.Filter;
-import dev.abidino.export.export.api.TableHeaderSubType;
+import dev.abidino.export.export.entities.ColumnHeader;
 import dev.abidino.export.export.entities.Request;
-import dev.abidino.export.export.entities.TableHeader;
-import dev.abidino.export.export.service.ColumnHeaderService;
 import dev.abidino.export.export.service.QueryExecuteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.List;
+import java.util.UUID;
 
 import static dev.abidino.export.export.ExportConstant.BATCH_SIZE;
 
@@ -24,12 +24,10 @@ import static dev.abidino.export.export.ExportConstant.BATCH_SIZE;
 @RequiredArgsConstructor
 @Slf4j
 public class CsvExportService {
-    private final ColumnHeaderService columnHeaderService;
     private final QueryExecuteService queryExecuteService;
 
-    public String createCsv(String query, TableHeaderSubType exportType, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
-        TableHeader tableHeader = request.getTableHeader();
-        List<String> headerList = columnHeaderService.getHeaderListByTableHeaderId(tableHeader.getId());
+    public ExportResponse createCsv(String query, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
+        List<String> headerList = request.getColumnHeaders().stream().map(ColumnHeader::getHeader).toList();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         OutputStreamWriter writer = new OutputStreamWriter(outputStream);
@@ -62,8 +60,9 @@ public class CsvExportService {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-        FileUtil.convertByteArrayOutputStreamToFile(outputStream, FileUtil.createFileName(exportType.name(), ".csv"));
-        return FileUtil.convertToBase64(outputStream);
+        FileUtil.convertByteArrayOutputStreamToFile(outputStream, FileUtil.createFileName(UUID.randomUUID().toString(), ".csv"));
+        String base64 = FileUtil.convertToBase64(outputStream);
+        return new ExportResponse(FileUtil.generateRandomLong(), base64, true, "export successfully finished", request.getId());
     }
 
     private void addValues(List<List<Object>> records, CSVPrinter csvPrinter) {
@@ -84,4 +83,5 @@ public class CsvExportService {
             throw new RuntimeException("CSV dosyası oluşturulurken hata: " + e.getMessage());
         }
     }
+
 }

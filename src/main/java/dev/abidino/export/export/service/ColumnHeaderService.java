@@ -19,4 +19,8 @@ public class ColumnHeaderService {
                 .map(ColumnHeader::getHeader)
                 .toList();
     }
+
+    public List<ColumnHeader> getColumnHeaderListByTableHeaderId(Long tableHeaderId) {
+        return columnHeaderRepository.findAllByTableHeader_IdOrderByOrderNo(tableHeaderId);
+    }
 }

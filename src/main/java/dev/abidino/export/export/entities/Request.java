@@ -1,8 +1,10 @@
 package dev.abidino.export.export.entities;
 
+import dev.abidino.export.export.api.RequestStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -15,12 +17,33 @@ public class Request {
     @ManyToOne
     private TableHeader tableHeader;
 
-    private String requestStatus;
-    private Long mediaId;
+    @Enumerated(EnumType.STRING)
+    private RequestStatus requestStatus;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<Long> mediaIds = new ArrayList<>();
     private Integer dataCount;
     private String filters;
     private Boolean isJob;
 
-    @ManyToMany
-    private List<ColumnHeader> columnHeaders;
+    @ManyToMany(fetch = FetchType.EAGER)
+    private List<ColumnHeader> columnHeaders = new ArrayList<>();
+
+    public void addColumnHeader(ColumnHeader columnHeader) {
+        this.columnHeaders.add(columnHeader);
+    }
+
+    public void addColumnHeader(List<ColumnHeader> columnHeaders) {
+        this.columnHeaders.addAll(columnHeaders);
+    }
+
+
+    public void addMediaId(Long mediaId) {
+        this.mediaIds.add(mediaId);
+    }
+
+    public void addMediaId(List<Long> mediaIds) {
+        this.mediaIds.addAll(mediaIds);
+    }
+
 }

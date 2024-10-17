@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.Random;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FileUtil {
@@ -34,5 +35,10 @@ public class FileUtil {
     public static String convertToBase64(ByteArrayOutputStream outputStream) {
         byte[] byteArray = outputStream.toByteArray();
         return Base64.getEncoder().encodeToString(byteArray);
+    }
+
+    public static long generateRandomLong() {
+        Random random = new Random();
+        return random.nextLong();
     }
 }

@@ -12,7 +12,7 @@ public class ExportController {
     private final ExportApplicationService exportApplicationService;
 
     @PostMapping("/export")
-    public String export(@RequestBody ExportRequest exportRequest) {
+    public ExportResponse export(@RequestBody ExportRequest exportRequest) {
         return exportApplicationService.export(exportRequest);
     }
 }

@@ -1,11 +1,10 @@
 package dev.abidino.export.export.export.excel;
 
 import dev.abidino.export.FileUtil;
+import dev.abidino.export.export.api.ExportResponse;
 import dev.abidino.export.export.api.Filter;
-import dev.abidino.export.export.api.TableHeaderSubType;
+import dev.abidino.export.export.entities.ColumnHeader;
 import dev.abidino.export.export.entities.Request;
-import dev.abidino.export.export.entities.TableHeader;
-import dev.abidino.export.export.service.ColumnHeaderService;
 import dev.abidino.export.export.service.QueryExecuteService;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.UUID;
 
 import static dev.abidino.export.export.ExportConstant.BATCH_SIZE;
 
@@ -24,15 +24,13 @@ import static dev.abidino.export.export.ExportConstant.BATCH_SIZE;
 @RequiredArgsConstructor
 public class ExcelExportService {
 
-    private final ColumnHeaderService columnHeaderService;
     private final QueryExecuteService queryExecuteService;
 
-    public String createExcel(String query, TableHeaderSubType exportType, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
-        TableHeader tableHeader = request.getTableHeader();
-        List<String> headerList = columnHeaderService.getHeaderListByTableHeaderId(tableHeader.getId());
+    public ExportResponse createExcel(String query, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
+        List<String> headerList = request.getColumnHeaders().stream().map(ColumnHeader::getHeader).toList();
 
         Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet(tableHeader.getHeader());
+        Sheet sheet = workbook.createSheet(request.getTableHeader().getHeader());
         while (currentOffset < dataCount) {
             String paginatedQuery = query + " LIMIT " + BATCH_SIZE + " OFFSET " + currentOffset;
             List<List<Object>> lists = queryExecuteService.executeQuery(paginatedQuery, filters);
@@ -49,8 +47,9 @@ public class ExcelExportService {
             throw new RuntimeException(e);
         }
 
-        FileUtil.convertByteArrayOutputStreamToFile(outputStream, FileUtil.createFileName(exportType.name(), ".xlsx"));
-        return FileUtil.convertToBase64(outputStream);
+        FileUtil.convertByteArrayOutputStreamToFile(outputStream, FileUtil.createFileName(UUID.randomUUID().toString(), ".xlsx"));
+        String base64 = FileUtil.convertToBase64(outputStream);
+        return new ExportResponse(FileUtil.generateRandomLong(), base64, true, "export successfully finished", request.getId());
     }
 
     private void addValues(List<List<Object>> records, List<String> columnHeaders, Sheet sheet) {
