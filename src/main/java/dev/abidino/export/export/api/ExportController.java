@@ -13,6 +13,6 @@ public class ExportController {
 
     @PostMapping("/export")
     public String export(@RequestBody ExportRequest exportRequest) {
-        return exportApplicationService.export(exportRequest.query(), exportRequest.exportType(), exportRequest.filters());
+        return exportApplicationService.export(exportRequest);
     }
 }

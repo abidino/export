@@ -1,8 +1,8 @@
 package dev.abidino.export.export.export.excel;
 
 import dev.abidino.export.FileUtil;
-import dev.abidino.export.export.api.ExportType;
 import dev.abidino.export.export.api.Filter;
+import dev.abidino.export.export.api.TableHeaderSubType;
 import dev.abidino.export.export.entities.Request;
 import dev.abidino.export.export.entities.TableHeader;
 import dev.abidino.export.export.service.ColumnHeaderService;
@@ -27,7 +27,7 @@ public class ExcelExportService {
     private final ColumnHeaderService columnHeaderService;
     private final QueryExecuteService queryExecuteService;
 
-    public String createExcel(String query, ExportType exportType, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
+    public String createExcel(String query, TableHeaderSubType exportType, Long dataCount, Long currentOffset, Request request, List<Filter> filters) {
         TableHeader tableHeader = request.getTableHeader();
         List<String> headerList = columnHeaderService.getHeaderListByTableHeaderId(tableHeader.getId());
 

@@ -1,7 +1,9 @@
 package dev.abidino.export.export;
 
-import dev.abidino.export.export.api.ExportType;
+import dev.abidino.export.export.api.ExportRequest;
 import dev.abidino.export.export.api.Filter;
+import dev.abidino.export.export.api.TableHeaderSubType;
+import dev.abidino.export.export.api.TableHeaderType;
 import dev.abidino.export.export.entities.Request;
 import dev.abidino.export.export.entities.TableHeader;
 import dev.abidino.export.export.export.csv.AsyncExportService;
@@ -29,7 +31,11 @@ public class ExportApplicationService {
     private final TableHeaderService tableHeaderService;
 
 
-    public String export(String query, ExportType exportType, List<Filter> filters) {
+    public String export(ExportRequest exportRequest) {
+        List<Filter> filters = exportRequest.filters();
+        String query = exportRequest.query();
+        TableHeaderSubType tableHeaderSubType = exportRequest.tableHeaderSubType();
+        TableHeaderType tableHeaderType = exportRequest.tableHeaderType();
 
         Long dataCount = queryExecuteService.executeCountQuery(query, filters);
 
@@ -38,20 +44,20 @@ public class ExportApplicationService {
             return "data not found";
         }
 
-        TableHeader tableHeader = tableHeaderService.getTableHeaderByExportType(exportType);
+        TableHeader tableHeader = tableHeaderService.getTableHeaderByExportType(tableHeaderType, tableHeaderSubType);
         Request request = createRequest(query, dataCount, tableHeader);
         Request savedRequest = requestService.save(request);
 
         if (dataCount < 5) {
-            String excel = excelExportService.createExcel(query, exportType, dataCount, 0L, savedRequest, filters);
+            String excel = excelExportService.createExcel(query, tableHeaderSubType, dataCount, 0L, savedRequest, filters);
             requestService.updateStatus(savedRequest.getId(), "DONE");
             return excel;
         } else if (dataCount < 7) {
-            String csv = csvExportService.createCsv(query, exportType, dataCount, 0L, savedRequest, filters);
+            String csv = csvExportService.createCsv(query, tableHeaderSubType, dataCount, 0L, savedRequest, filters);
             requestService.updateStatus(savedRequest.getId(), "DONE");
             return csv;
         } else {
-            return asyncExportService.startAsyncExport(query, exportType, request.getId(), filters);
+            return asyncExportService.startAsyncExport(query, tableHeaderSubType, request.getId(), filters);
         }
     }
 

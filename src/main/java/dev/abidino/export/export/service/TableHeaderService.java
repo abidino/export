@@ -1,6 +1,7 @@
 package dev.abidino.export.export.service;
 
-import dev.abidino.export.export.api.ExportType;
+import dev.abidino.export.export.api.TableHeaderSubType;
+import dev.abidino.export.export.api.TableHeaderType;
 import dev.abidino.export.export.entities.TableHeader;
 import dev.abidino.export.export.repo.TableHeaderRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +16,8 @@ import java.util.Optional;
 public class TableHeaderService {
     private final TableHeaderRepository tableHeaderRepository;
 
-    public TableHeader getTableHeaderByExportType(ExportType exportType) {
-        Optional<TableHeader> optTableHeader = tableHeaderRepository.findByType(exportType);
+    public TableHeader getTableHeaderByExportType(TableHeaderType tableHeaderType, TableHeaderSubType tableHeaderSubType) {
+        Optional<TableHeader> optTableHeader = tableHeaderRepository.findByTableHeaderTypeAndTableHeaderSubType(tableHeaderType, tableHeaderSubType);
 
         if (optTableHeader.isEmpty()) {
             log.error("No product found");
