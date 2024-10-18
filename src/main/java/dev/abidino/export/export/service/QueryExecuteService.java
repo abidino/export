@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +24,10 @@ public class QueryExecuteService {
             throw new RuntimeException("query is unsafe : " + query);
         }
 
-        Map<String, Object> filterMap = filterList.stream().collect(Collectors.toMap(Filter::key, Filter::value));
+        Map<String, Object> filterMap = new HashMap<>();
+        if (filterList != null) {
+            filterList.forEach(filter -> filterMap.put(filter.key(), filter.value()));
+        }
         MapSqlParameterSource parameters = new MapSqlParameterSource(filterMap);
 
         return jdbcTemplate.query(query, parameters, (ResultSet rs) -> {
@@ -46,22 +49,24 @@ public class QueryExecuteService {
         if (!isQuerySafe(query)) {
             throw new RuntimeException("query is unsafe : " + query);
         }
-
-        Map<String, Object> filterMap = filterList.stream().collect(Collectors.toMap(Filter::key, Filter::value));
+        Map<String, Object> filterMap = new HashMap<>();
+        if (filterList != null) {
+            filterList.forEach(filter -> filterMap.put(filter.key(), filter.value()));
+        }
         String optimizedQuery = removeOrderByClause(query);
         String countQuery = "SELECT COUNT(*) FROM (" + optimizedQuery + ") AS count_query";
 
-        return jdbcTemplate.queryForObject(countQuery,filterMap, Long.class);
+        return jdbcTemplate.queryForObject(countQuery, filterMap, Long.class);
     }
 
     private boolean isQuerySafe(String query) {
         String lowerCaseQuery = query.toLowerCase();
         boolean containsProhibitedWords = (
                 lowerCaseQuery.contains("delete") ||
-                lowerCaseQuery.contains("drop") ||
-                lowerCaseQuery.contains("alter") ||
-                lowerCaseQuery.contains("--") ||
-                lowerCaseQuery.contains(";")
+                        lowerCaseQuery.contains("drop") ||
+                        lowerCaseQuery.contains("alter") ||
+                        lowerCaseQuery.contains("--") ||
+                        lowerCaseQuery.contains(";")
         );
 
         return lowerCaseQuery.startsWith("select") && !containsProhibitedWords;

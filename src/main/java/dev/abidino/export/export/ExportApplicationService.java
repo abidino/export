@@ -33,12 +33,12 @@ public class ExportApplicationService {
         Long dataCount = queryExecuteService.executeCountQuery(query, filters);
 
         if (dataCount == 0) {
-            return new ExportResponse(null, null, false, "data not found", null);
+            throw new RuntimeException("data not found");
         }
 
         Request request = requestService.save(exportRequest, dataCount);
 
-        if (dataCount < 9) {
+        if (dataCount < 5) {
             ExportResponse exportResponse = excelExportService.createExcel(query, dataCount, 0L, request, filters);
             updateRequest(request, exportResponse);
             return exportResponse;

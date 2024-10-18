@@ -2,6 +2,7 @@ package dev.abidino.export.export.export.excel;
 
 import dev.abidino.export.FileUtil;
 import dev.abidino.export.export.api.ExportResponse;
+import dev.abidino.export.export.api.ExportStrategyType;
 import dev.abidino.export.export.api.Filter;
 import dev.abidino.export.export.entities.ColumnHeader;
 import dev.abidino.export.export.entities.Request;
@@ -49,7 +50,7 @@ public class ExcelExportService {
 
         FileUtil.convertByteArrayOutputStreamToFile(outputStream, FileUtil.createFileName(UUID.randomUUID().toString(), ".xlsx"));
         String base64 = FileUtil.convertToBase64(outputStream);
-        return new ExportResponse(FileUtil.generateRandomLong(), base64, true, "export successfully finished", request.getId());
+        return new ExportResponse(FileUtil.generateRandomLong(), base64, true, "export successfully finished", request.getId(), ExportStrategyType.SYNC);
     }
 
     private void addValues(List<List<Object>> records, List<String> columnHeaders, Sheet sheet) {

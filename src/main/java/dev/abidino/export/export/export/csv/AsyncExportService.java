@@ -2,6 +2,7 @@ package dev.abidino.export.export.export.csv;
 
 import com.google.gson.Gson;
 import dev.abidino.export.export.api.ExportResponse;
+import dev.abidino.export.export.api.ExportStrategyType;
 import dev.abidino.export.export.api.Filter;
 import dev.abidino.export.export.api.RequestStatus;
 import dev.abidino.export.export.entities.Request;
@@ -41,7 +42,7 @@ public class AsyncExportService {
 
     public ExportResponse startAsyncExport(String query, Long requestId, List<Filter> filterList) {
         sendMessage(requestId, query, 0L, LIMIT_FOR_BIG_DATA, filterList);
-        return new ExportResponse(null, null, true, "export successfully started", requestId);
+        return new ExportResponse(null, null, true, "export successfully started", requestId, ExportStrategyType.ASYNC);
     }
 
     private void sendMessage(Long requestId, String query, Long offset, Long limit, List<Filter> filterList) {
